@@ -1,0 +1,244 @@
+import javax.swing.*;
+import java.awt.*;
+import java.awt.event.*;
+import java.text.DecimalFormat;
+import java.util.HashMap;
+
+class Account {
+    String accNo;
+    String name;
+    double balance;
+
+    public Account(String accNo, String name, double balance) {
+        this.accNo = accNo;
+        this.name = name;
+        this.balance = balance;
+    }
+
+    public void deposit(double amount) {
+        balance += amount;
+    }
+
+    public boolean withdraw(double amount) {
+        if (amount <= balance) {
+            balance -= amount;
+            return true;
+        }
+        return false;
+    }
+}
+
+class Loan {
+    String loanId;
+    String accNo;
+    String loanType;
+    double amount;
+    double rate;
+    int years;
+
+    public Loan(String loanId, String accNo, String loanType, double amount, double rate, int years) {
+        this.loanId = loanId;
+        this.accNo = accNo;
+        this.loanType = loanType;
+        this.amount = amount;
+        this.rate = rate;
+        this.years = years;
+    }
+
+    public double calculateInterest() {
+        return (amount * rate * years) / 100;
+    }
+
+    public double totalPayable() {
+        return amount + calculateInterest();
+    }
+}
+
+public class BankingLoanGUI extends JFrame implements ActionListener {
+
+    HashMap<String, Account> accounts = new HashMap<>();
+    HashMap<String, Loan> loans = new HashMap<>();
+
+    JTextField accNoField, nameField, balanceField;
+    JTextField loanIdField, loanTypeField, loanAmountField, loanRateField, loanYearsField;
+
+    JTextArea output;
+    JButton createAccBtn, depositBtn, withdrawBtn, displayBtn, applyLoanBtn, viewLoanBtn;
+
+    DecimalFormat df = new DecimalFormat("#,##0.00");
+
+    public BankingLoanGUI() {
+        setTitle("Banking & Loan Management System");
+        setSize(650, 650);
+        setDefaultCloseOperation(EXIT_ON_CLOSE);
+        setLayout(new BorderLayout());
+
+        JLabel title = new JLabel("BANKING AND LOAN MANAGEMENT SYSTEM", JLabel.CENTER);
+        title.setFont(new Font("Arial", Font.BOLD, 16));
+        add(title, BorderLayout.NORTH);
+
+        JPanel panel = new JPanel(new GridLayout(14, 2, 5, 5));
+
+        panel.add(new JLabel("Account No:"));
+        accNoField = new JTextField();
+        panel.add(accNoField);
+
+        panel.add(new JLabel("Name:"));
+        nameField = new JTextField();
+        panel.add(nameField);
+
+        panel.add(new JLabel("Initial Balance / Amount:"));
+        balanceField = new JTextField();
+        panel.add(balanceField);
+
+        createAccBtn = new JButton("Create Account");
+        panel.add(createAccBtn);
+
+        depositBtn = new JButton("Deposit");
+        panel.add(depositBtn);
+
+        withdrawBtn = new JButton("Withdraw");
+        panel.add(withdrawBtn);
+
+        displayBtn = new JButton("Display Account");
+        panel.add(displayBtn);
+
+        panel.add(new JLabel("Loan ID:"));
+        loanIdField = new JTextField();
+        panel.add(loanIdField);
+
+        panel.add(new JLabel("Loan Type:"));
+        loanTypeField = new JTextField();
+        panel.add(loanTypeField);
+
+        panel.add(new JLabel("Loan Amount:"));
+        loanAmountField = new JTextField();
+        panel.add(loanAmountField);
+
+        panel.add(new JLabel("Interest Rate (%):"));
+        loanRateField = new JTextField();
+        panel.add(loanRateField);
+
+        panel.add(new JLabel("Duration (Years):"));
+        loanYearsField = new JTextField();
+        panel.add(loanYearsField);
+
+        applyLoanBtn = new JButton("Apply Loan");
+        panel.add(applyLoanBtn);
+
+        viewLoanBtn = new JButton("View Loan");
+        panel.add(viewLoanBtn);
+
+        add(panel, BorderLayout.CENTER);
+
+        output = new JTextArea();
+        output.setEditable(false);
+        add(new JScrollPane(output), BorderLayout.SOUTH);
+
+        createAccBtn.addActionListener(this);
+        depositBtn.addActionListener(this);
+        withdrawBtn.addActionListener(this);
+        displayBtn.addActionListener(this);
+        applyLoanBtn.addActionListener(this);
+        viewLoanBtn.addActionListener(this);
+
+        setVisible(true);
+    }
+
+    @Override
+    public void actionPerformed(ActionEvent e) {
+        String accNo = accNoField.getText().trim();
+        String name = nameField.getText().trim();
+        double balance = 0;
+
+        try {
+            balance = Double.parseDouble(balanceField.getText().trim().isEmpty() ? "0" : balanceField.getText().trim());
+        } catch (NumberFormatException ex) {
+            JOptionPane.showMessageDialog(this, "Please enter valid numeric value!");
+            return;
+        }
+
+        if (e.getSource() == createAccBtn) {
+            if (accounts.containsKey(accNo)) {
+                output.setText("❌ Account already exists!");
+            } else {
+                accounts.put(accNo, new Account(accNo, name, balance));
+                output.setText("✅ Account Created!\nAccount No: " + accNo + "\nName: " + name + "\nBalance: ₹" + df.format(balance));
+                accNoField.setText(""); nameField.setText(""); balanceField.setText("");
+            }
+
+        } else if (e.getSource() == depositBtn) {
+            if (accounts.containsKey(accNo)) {
+                accounts.get(accNo).deposit(balance);
+                output.setText("✅ ₹" + df.format(balance) + " deposited.\nTotal Balance: ₹" + df.format(accounts.get(accNo).balance));
+                balanceField.setText("");
+            } else {
+                output.setText("❌ Account not found!");
+            }
+
+        } else if (e.getSource() == withdrawBtn) {
+            if (accounts.containsKey(accNo)) {
+                boolean ok = accounts.get(accNo).withdraw(balance);
+                if (ok)
+                    output.setText("✅ ₹" + df.format(balance) + " withdrawn.\nRemaining Balance: ₹" + df.format(accounts.get(accNo).balance));
+                else
+                    output.setText("❌ Insufficient balance!");
+                balanceField.setText("");
+            } else {
+                output.setText("❌ Account not found!");
+            }
+
+        } else if (e.getSource() == displayBtn) {
+            if (accounts.containsKey(accNo)) {
+                Account a = accounts.get(accNo);
+                output.setText("📄 Account Details:\nAccount No: " + a.accNo + "\nName: " + a.name + "\nBalance: ₹" + df.format(a.balance));
+            } else {
+                output.setText("❌ Account not found!");
+            }
+
+        } else if (e.getSource() == applyLoanBtn) {
+            String loanId = loanIdField.getText().trim();
+            String type = loanTypeField.getText().trim();
+            double amt = 0, rate = 0;
+            int years = 0;
+
+            try {
+                amt = Double.parseDouble(loanAmountField.getText().trim());
+                rate = Double.parseDouble(loanRateField.getText().trim());
+                years = Integer.parseInt(loanYearsField.getText().trim());
+            } catch (NumberFormatException ex) {
+                JOptionPane.showMessageDialog(this, "Enter valid numeric loan values!");
+                return;
+            }
+
+            if (!accounts.containsKey(accNo)) {
+                output.setText("❌ Account not found!");
+            } else if (loans.containsKey(loanId)) {
+                output.setText("❌ Loan ID already exists!");
+            } else {
+                Loan l = new Loan(loanId, accNo, type, amt, rate, years);
+                loans.put(loanId, l);
+                output.setText("✅ Loan Applied!\nLoan ID: " + loanId + "\nTotal Payable: ₹" + df.format(l.totalPayable()));
+                loanIdField.setText(""); loanTypeField.setText(""); loanAmountField.setText(""); loanRateField.setText(""); loanYearsField.setText("");
+            }
+
+        } else if (e.getSource() == viewLoanBtn) {
+            String loanId = loanIdField.getText().trim();
+            if (loans.containsKey(loanId)) {
+                Loan l = loans.get(loanId);
+                output.setText("📄 Loan Details:\nLoan ID: " + l.loanId +
+                        "\nAccount No: " + l.accNo +
+                        "\nType: " + l.loanType +
+                        "\nAmount: ₹" + df.format(l.amount) +
+                        "\nInterest: ₹" + df.format(l.calculateInterest()) +
+                        "\nTotal Payable: ₹" + df.format(l.totalPayable()));
+            } else {
+                output.setText("❌ Loan not found!");
+            }
+        }
+    }
+
+    public static void main(String[] args) {
+        new BankingLoanGUI();
+    }
+}
